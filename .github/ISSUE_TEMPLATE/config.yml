@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/YOUR_USERNAME/YOUR_REPO/discussions
+    about: Ask questions or discuss ideas
+  - name: Security Issue
+    url: https://github.com/YOUR_USERNAME/YOUR_REPO/security/advisories/new
+    about: Report a security vulnerability
+

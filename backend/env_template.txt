@@ -1,0 +1,86 @@
+# Environment Variables - Backend Configuration
+# Copy this file to .env and fill in your actual values
+
+# ========== NEO4J AURA CONFIGURATION ==========
+NEO4J_URI=neo4j+s://your-instance-id.databases.neo4j.io
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password-here
+NEO4J_DATABASE=neo4j
+NEO4J_MAX_POOL_SIZE=20
+NEO4J_CONNECTION_TIMEOUT=30
+
+# ========== JWT CONFIGURATION ==========
+JWT_SECRET_KEY=your-jwt-secret-key-here-minimum-32-characters-long
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+JWT_REFRESH_EXPIRATION_DAYS=7
+
+# ========== API CONFIGURATION ==========
+API_HOST=0.0.0.0
+API_PORT=8000
+API_DEBUG=true
+API_RELOAD=true
+
+# ========== CORS CONFIGURATION ==========
+CORS_ORIGINS=["http://localhost:5173","http://localhost:3000","http://127.0.0.1:5173"]
+
+# ========== LOGGING CONFIGURATION ==========
+LOG_LEVEL=INFO
+LOG_FILE=logs/agentic_alerts.log
+
+# ========== INVESTIGATION TIMEOUT ==========
+INVESTIGATION_TIMEOUT_SECONDS=30
+
+# ========== AGENTS CONFIGURATION ==========
+AGENT_TIMEOUT_SECONDS=15
+AGENT_ENABLE_LOGGING=true
+
+# ========== SEED DATA CONFIGURATION ==========
+# Automatically create seed data on startup if missing (default: true)
+# Set to false to disable auto-creation
+AUTO_CREATE_SEED_DATA=true
+
+# ========== EMAIL SERVICE CONFIGURATION ==========
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-specific-password-here
+FROM_EMAIL=noreply@yourdomain.com
+FROM_NAME=Compliance Team
+MAX_EMAILS_PER_HOUR=5
+MAX_EMAILS_PER_DAY=10
+BLOCKED_EMAIL_DOMAINS=test.com,example.com
+
+# ========== SYSTEM GUARDRAILS ==========
+ENABLE_INPUT_VALIDATION=true
+ENABLE_OUTPUT_SANITIZATION=true
+ENABLE_RATE_LIMITING=true
+MAX_REQUEST_LENGTH=100000
+
+# ========== MALFUNCTION HANDLING ==========
+MAX_RETRIES=3
+CIRCUIT_BREAKER_FAILURE_THRESHOLD=5
+CIRCUIT_BREAKER_TIMEOUT_SECONDS=60
+DLQ_MAX_SIZE=1000
+
+# ========== LLM CONFIGURATION (OpenAI Only) ==========
+# Enable LLM for enhanced reasoning (default: false)
+LLM_ENABLED=false
+LLM_MODEL=gpt-4o
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=1000
+LLM_ENHANCE_RATIONALE=false
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+
+# ========== REPORT GENERATION ==========
+# Enable AI-powered evaluation report generation (default: true)
+# Reports are automatically attached to RFI emails
+REPORT_GENERATION_ENABLED=true
+
+# Structured Output Configuration
+# Use Pydantic models to force structured output (requires gpt-4o or compatible model)
+# If false, falls back to LangChain with prompt-based generation
+USE_STRUCTURED_OUTPUT=true
+

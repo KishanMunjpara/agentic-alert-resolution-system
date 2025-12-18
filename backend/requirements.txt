@@ -1,0 +1,46 @@
+# FastAPI & Web Framework
+FastAPI==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+websockets>=12.0
+
+# Database
+neo4j==5.14.0
+
+# Agent & LLM
+# Note: Using langchain-openai for OpenAI integration (standalone package)
+# Updated to support OpenAI SDK 2.x
+langchain-openai>=1.1.0  # Compatible with OpenAI 2.x
+langchain-core>=1.2.0  # Required by langchain-openai 1.x
+langchain>=1.2.0  # Main LangChain package
+openai>=2.0.0,<3.0.0  # OpenAI SDK 2.x (compatible with langchain-openai 1.x)
+pydantic>=2.7.4,<3.0.0  # Required by langchain-core>=1.2.0
+email-validator==2.1.0
+
+# Authentication & Security
+PyJWT==2.8.0
+bcrypt==4.1.1
+python-jose==3.3.0
+
+# Environment & Config
+python-dotenv==1.0.0
+
+# Testing
+pytest==8.3.0
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-parametrize==1.5.0
+httpx==0.25.0
+
+# Utilities
+requests>=2.32.0
+typing-extensions>=4.15.0
+
+# Optional: For advanced logging
+python-json-logger==2.0.7
+
+# Development
+black==23.12.0
+flake8==6.1.0
+isort==5.13.2
+
