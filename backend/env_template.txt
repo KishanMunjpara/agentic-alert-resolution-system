@@ -51,6 +51,10 @@ MAX_EMAILS_PER_HOUR=5
 MAX_EMAILS_PER_DAY=10
 BLOCKED_EMAIL_DOMAINS=test.com,example.com
 
+# Compliance Team Email (for SAR case notifications)
+# Default: email
+COMPLIANCE_TEAM_EMAIL=email
+
 # ========== SYSTEM GUARDRAILS ==========
 ENABLE_INPUT_VALIDATION=true
 ENABLE_OUTPUT_SANITIZATION=true
