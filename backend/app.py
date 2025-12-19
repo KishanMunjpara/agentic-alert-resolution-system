@@ -338,8 +338,8 @@ def _create_scenario_test_data(alert_id: str, scenario_code: str, account_id: st
                 t.description = $description
             MERGE (acc)-[:HAS_TRANSACTION]->(t)
             """
-            # Convert timestamp to ISO format for Neo4j
-            txn_params = {**txn, "timestamp": txn["timestamp"]}
+            # Add account_id to transaction parameters
+            txn_params = {**txn, "account_id": account_id, "timestamp": txn["timestamp"]}
             db.execute_write(query, txn_params)
         
         # Set customer KYC risk to HIGH
@@ -378,7 +378,9 @@ def _create_scenario_test_data(alert_id: str, scenario_code: str, account_id: st
                 t.description = $description
             MERGE (acc)-[:HAS_TRANSACTION]->(t)
             """
-            db.execute_write(query, txn)
+            # Add account_id to transaction parameters
+            txn_params = {**txn, "account_id": account_id}
+            db.execute_write(query, txn_params)
         
         # Set customer KYC risk to MEDIUM
         query = """

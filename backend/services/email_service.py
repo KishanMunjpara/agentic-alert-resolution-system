@@ -1217,6 +1217,48 @@ Compliance Department
         """Get email audit log"""
         return self.email_audit_log[-limit:]
     
+    async def _send_email_simple(self, to_email: str, subject: str, body: str) -> Dict:
+        """
+        Simple email sending method for notifications
+        
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            body: Email body (plain text)
+            
+        Returns:
+            Result dictionary
+        """
+        try:
+            # Validate email
+            is_valid, reason = self._validate_email_address(to_email)
+            if not is_valid:
+                return {"success": False, "status": "VALIDATION_FAILED", "reason": reason}
+            
+            # Create email
+            msg = MIMEMultipart("alternative")
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            
+            # Plain text version
+            text_content = self._sanitize_content(body)
+            msg.attach(MIMEText(text_content, "plain"))
+            
+            # Send email
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                server.starttls()
+                if self.smtp_user and self.smtp_password:
+                    server.login(self.smtp_user, self.smtp_password)
+                server.send_message(msg)
+            
+            logger.info(f"✓ Simple email sent to {to_email}: {subject}")
+            return {"success": True, "status": "SENT"}
+            
+        except Exception as e:
+            logger.error(f"Failed to send simple email: {e}")
+            return {"success": False, "error": str(e)}
+    
     def get_rate_limit_status(self, customer_id: str) -> Dict:
         """Get rate limit status for a customer"""
         now = datetime.now()

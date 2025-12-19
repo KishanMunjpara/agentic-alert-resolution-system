@@ -146,6 +146,52 @@ class SystemMalfunctionHandler:
             )
         return self.circuit_breakers[component]
     
+    def check_circuit(self, component: str) -> bool:
+        """
+        Check if circuit breaker allows execution
+        
+        Args:
+            component: Component name
+            
+        Returns:
+            True if circuit is closed (allows execution), False if open
+        """
+        circuit_breaker = self._create_circuit_breaker(component)
+        
+        if circuit_breaker.state == "OPEN":
+            # Check if timeout has passed
+            if circuit_breaker.last_failure_time:
+                elapsed = (datetime.now() - circuit_breaker.last_failure_time).total_seconds()
+                if elapsed >= circuit_breaker.timeout_seconds:
+                    circuit_breaker.state = "HALF_OPEN"
+                    logger.info(f"Circuit breaker transitioning to HALF_OPEN for {component}")
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        
+        return True  # CLOSED or HALF_OPEN allows execution
+    
+    def trip_circuit(self, component: str):
+        """Manually trip circuit breaker for a component"""
+        circuit_breaker = self._create_circuit_breaker(component)
+        circuit_breaker.failure_count += 1
+        circuit_breaker.last_failure_time = datetime.now()
+        
+        if circuit_breaker.failure_count >= circuit_breaker.failure_threshold:
+            circuit_breaker.state = "OPEN"
+            logger.warning(f"Circuit breaker OPENED for {component} after {circuit_breaker.failure_count} failures")
+    
+    def reset_circuit(self, component: str):
+        """Reset circuit breaker for a component"""
+        if component in self.circuit_breakers:
+            circuit_breaker = self.circuit_breakers[component]
+            circuit_breaker.failure_count = 0
+            if circuit_breaker.state != "CLOSED":
+                circuit_breaker.state = "CLOSED"
+                logger.info(f"Circuit breaker reset for {component}")
+    
     def record_malfunction(
         self,
         malfunction_type: MalfunctionType,

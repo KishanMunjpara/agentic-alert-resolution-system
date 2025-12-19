@@ -50,6 +50,12 @@ CREATE INDEX ON :Event(alert_id);
 CREATE INDEX ON :Event(timestamp);
 CREATE INDEX ON :Event(event_type);
 
+# SARCase Constraints
+CREATE CONSTRAINT sar_case_id ON (sar:SARCase) ASSERT sar.sar_id IS UNIQUE;
+CREATE INDEX ON :SARCase(alert_id);
+CREATE INDEX ON :SARCase(status);
+CREATE INDEX ON :SARCase(created_at);
+
 # ============================================================================
 # STEP 2: VERIFY SCHEMA (Run query to verify)
 # ============================================================================
