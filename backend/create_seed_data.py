@@ -248,7 +248,11 @@ def create_seed_data():
             {'txn_id': 'TXN-103', 'amount': 9700.0, 'hours_ago': 24},
         ]
         
-        for txn in transactions_a002:
+        # Add geographic locations for structuring scenario (geographically diverse)
+        geographic_locations = ['New York, NY', 'Los Angeles, CA', 'Chicago, IL']
+        branch_locations = ['Branch-A', 'Branch-B', 'Branch-C']
+        
+        for i, txn in enumerate(transactions_a002):
             query = """
             MATCH (a:Account {account_id: 'ACC-002'})
             MERGE (t:Transaction {txn_id: $txn_id})
@@ -259,10 +263,14 @@ def create_seed_data():
                 t.description = 'Deposit',
                 t.counterparty = 'Unknown',
                 t.counterparty_mcc = 'GENERAL',
+                t.branch_location = $branch_location,
+                t.geographic_location = $geographic_location,
                 t.reference = $txn_id,
                 t.created_at = datetime()
             MERGE (a)-[:HAS_TRANSACTION]->(t)
             """
+            txn['branch_location'] = branch_locations[i % len(branch_locations)]
+            txn['geographic_location'] = geographic_locations[i % len(geographic_locations)]
             db.execute_write(query, txn)
         
         # Transaction for ACC-003 (KYC Inconsistency - Precious Metals)

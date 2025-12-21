@@ -45,9 +45,14 @@ class EmailService:
         self.from_email = os.getenv("FROM_EMAIL", default_from)
         self.from_name = os.getenv("FROM_NAME", "Compliance Team")
         
-        # Warn if FROM_EMAIL doesn't match SMTP_USER (Gmail may reject)
-        if self.smtp_user and self.from_email != self.smtp_user:
+        # Warn if FROM_EMAIL doesn't match SMTP_USER (Gmail requirement, but not for Brevo)
+        # For Gmail: FROM_EMAIL must match SMTP_USER
+        # For Brevo: FROM_EMAIL can be any verified sender email
+        is_gmail = "gmail.com" in self.smtp_host.lower()
+        if is_gmail and self.smtp_user and self.from_email != self.smtp_user:
             logger.warning(f"⚠️  FROM_EMAIL ({self.from_email}) doesn't match SMTP_USER ({self.smtp_user}). Gmail may reject emails. Consider setting FROM_EMAIL={self.smtp_user}")
+        elif "brevo.com" in self.smtp_host.lower() or "sendinblue.com" in self.smtp_host.lower():
+            logger.info(f"✓ Using Brevo SMTP. FROM_EMAIL ({self.from_email}) should be a verified sender in your Brevo account.")
         
         # Rate limiting: track emails per customer
         self.email_rate_limit = defaultdict(list)  # customer_id -> [timestamps]
@@ -340,6 +345,16 @@ Compliance Department
                         # Send email
                         server.send_message(msg)
                     
+                    # Log email details for diagnostics
+                    logger.info(f"📧 Email details - From: {msg['From']}, To: {msg['To']}, Subject: {msg['Subject']}")
+                    logger.info(f"📧 SMTP Config - Host: {self.smtp_host}, Port: {self.smtp_port}, User: {self.smtp_user}")
+                    is_gmail = "gmail.com" in self.smtp_host.lower()
+                    if is_gmail and self.from_email != self.smtp_user:
+                        logger.warning(f"⚠️  FROM_EMAIL ({self.from_email}) != SMTP_USER ({self.smtp_user}). Gmail may reject or mark as spam!")
+                    elif "brevo.com" in self.smtp_host.lower() or "sendinblue.com" in self.smtp_host.lower():
+                        logger.info(f"✓ Using Brevo SMTP. FROM_EMAIL ({self.from_email}) should be verified in Brevo dashboard.")
+                    logger.info(f"💡 Note: SMTP acceptance doesn't guarantee delivery. Check spam folder if email not received.")
+                    
                     # Success - update rate limit tracking
                     self.email_rate_limit[customer_id].append(datetime.now())
                     
@@ -359,7 +374,9 @@ Compliance Department
                         "alert_id": alert_id,
                         "action": "REPORT_EMAIL_SENT",
                         "status": "SUCCESS",
-                        "recommendation": resolution.get("recommendation", "UNKNOWN")
+                        "recommendation": resolution.get("recommendation", "UNKNOWN"),
+                        "from_email": self.from_email,
+                        "smtp_user": self.smtp_user
                     }
                     self.email_audit_log.append(audit_entry)
                     
@@ -934,6 +951,16 @@ Contact our Compliance Team:
                         # Send email
                         server.send_message(msg)
                     
+                    # Log email details for diagnostics
+                    logger.info(f"📧 Email details - From: {msg['From']}, To: {msg['To']}, Subject: {msg['Subject']}")
+                    logger.info(f"📧 SMTP Config - Host: {self.smtp_host}, Port: {self.smtp_port}, User: {self.smtp_user}")
+                    is_gmail = "gmail.com" in self.smtp_host.lower()
+                    if is_gmail and self.from_email != self.smtp_user:
+                        logger.warning(f"⚠️  FROM_EMAIL ({self.from_email}) != SMTP_USER ({self.smtp_user}). Gmail may reject or mark as spam!")
+                    elif "brevo.com" in self.smtp_host.lower() or "sendinblue.com" in self.smtp_host.lower():
+                        logger.info(f"✓ Using Brevo SMTP. FROM_EMAIL ({self.from_email}) should be verified in Brevo dashboard.")
+                    logger.info(f"💡 Note: SMTP acceptance doesn't guarantee delivery. Check spam folder if email not received.")
+                    
                     # Success - update rate limit tracking
                     self.email_rate_limit[customer_id].append(datetime.now())
                     
@@ -952,7 +979,9 @@ Contact our Compliance Team:
                         "customer_email": customer_email,
                         "alert_id": alert_id,
                         "action": "RFI_EMAIL_SENT",
-                        "status": "SUCCESS"
+                        "status": "SUCCESS",
+                        "from_email": self.from_email,
+                        "smtp_user": self.smtp_user
                     }
                     self.email_audit_log.append(audit_entry)
                     
@@ -1283,6 +1312,58 @@ Compliance Department
             "daily_limit": self.max_emails_per_day,
             "can_send": hourly_count < self.max_emails_per_hour and len(recent_emails) < self.max_emails_per_day
         }
+    
+    def get_email_config_diagnostics(self) -> Dict:
+        """
+        Get email configuration diagnostics to help troubleshoot delivery issues
+        
+        Returns:
+            Dictionary with configuration details and warnings
+        """
+        diagnostics = {
+            "smtp_host": self.smtp_host,
+            "smtp_port": self.smtp_port,
+            "smtp_user": self.smtp_user,
+            "from_email": self.from_email,
+            "from_name": self.from_name,
+            "has_password": bool(self.smtp_password),
+            "warnings": [],
+            "recommendations": []
+        }
+        
+        # Check for common issues
+        if not self.smtp_user:
+            diagnostics["warnings"].append("SMTP_USER is not set")
+            diagnostics["recommendations"].append("Set SMTP_USER in your .env file")
+        
+        if not self.smtp_password:
+            diagnostics["warnings"].append("SMTP_PASSWORD is not set")
+            diagnostics["recommendations"].append("Set SMTP_PASSWORD in your .env file (use App Password for Gmail)")
+        
+        # Check provider-specific requirements
+        is_gmail = "gmail.com" in self.smtp_host.lower()
+        is_brevo = "brevo.com" in self.smtp_host.lower() or "sendinblue.com" in self.smtp_host.lower()
+        
+        if is_gmail and self.from_email != self.smtp_user:
+            diagnostics["warnings"].append(f"FROM_EMAIL ({self.from_email}) doesn't match SMTP_USER ({self.smtp_user})")
+            diagnostics["recommendations"].append(f"Set FROM_EMAIL={self.smtp_user} in your .env file (Gmail requirement)")
+        elif is_brevo:
+            diagnostics["info"] = f"Using Brevo SMTP. FROM_EMAIL ({self.from_email}) should be a verified sender in your Brevo account."
+            if self.from_email != self.smtp_user:
+                diagnostics["info"] += " Note: For Brevo, FROM_EMAIL doesn't need to match SMTP_USER, but must be verified in your Brevo dashboard."
+        
+        if is_gmail and self.from_email != self.smtp_user:
+            diagnostics["warnings"].append("Gmail requires FROM_EMAIL to match SMTP_USER")
+            diagnostics["recommendations"].append("Gmail will reject or mark emails as spam if FROM_EMAIL doesn't match the authenticated account")
+        
+        if not diagnostics["warnings"]:
+            diagnostics["status"] = "OK"
+            diagnostics["message"] = "Email configuration looks good. If emails aren't received, check spam folder."
+        else:
+            diagnostics["status"] = "WARNING"
+            diagnostics["message"] = "Configuration issues detected. Emails may not be delivered."
+        
+        return diagnostics
 
 
 # Singleton instance

@@ -44,18 +44,57 @@ class Neo4jConnector:
     
     def test_connection(self) -> bool:
         """Test Neo4j connection"""
+        if not self._driver:
+            logger.error("✗ Neo4j driver not initialized")
+            return False
+        
         try:
+            # First, try to verify driver connectivity
+            self._driver.verify_connectivity()
+            
+            # Then test with a simple query
             with self._driver.session(database=config.NEO4J_DATABASE) as session:
                 result = session.run("RETURN 1 as test")
                 result.consume()
             logger.info("✓ Neo4j connection test successful")
             return True
         except Neo4jError as e:
-            logger.error(f"✗ Neo4j connection test failed: {e}")
-            logger.debug(f"Connection details - URI: {config.NEO4J_URI}, User: {config.NEO4J_USER}, Database: {config.NEO4J_DATABASE}")
+            error_code = getattr(e, 'code', 'UNKNOWN')
+            error_message = str(e)
+            
+            logger.error(f"✗ Neo4j connection test failed: {error_message}")
+            logger.error(f"  Error code: {error_code}")
+            logger.error(f"  URI: {config.NEO4J_URI}")
+            logger.error(f"  User: {config.NEO4J_USER}")
+            logger.error(f"  Database: {config.NEO4J_DATABASE}")
+            
+            # Provide helpful suggestions based on error
+            if "WRITE" in error_message.upper() or "routing" in error_message.lower():
+                logger.error("  💡 Suggestion: Check if Neo4j is running and accessible")
+                logger.error("     For Neo4j Aura, verify your instance is active")
+                logger.error("     For local Neo4j, ensure it's started: neo4j start")
+            elif "authentication" in error_message.lower() or "credentials" in error_message.lower():
+                logger.error("  💡 Suggestion: Verify NEO4J_USER and NEO4J_PASSWORD in .env file")
+            elif "database" in error_message.lower():
+                logger.error(f"  💡 Suggestion: Database '{config.NEO4J_DATABASE}' might not exist")
+                logger.error("     Try using 'neo4j' as the database name (default)")
+            
             return False
         except Exception as e:
-            logger.error(f"✗ Neo4j connection test failed with unexpected error: {e}")
+            error_type = type(e).__name__
+            error_message = str(e)
+            logger.error(f"✗ Neo4j connection test failed with unexpected error: {error_message}")
+            logger.error(f"  Error type: {error_type}")
+            logger.error(f"  URI: {config.NEO4J_URI}")
+            logger.error(f"  User: {config.NEO4J_USER}")
+            logger.error(f"  Database: {config.NEO4J_DATABASE}")
+            
+            # Check if it's a connection-related error
+            if "connection" in error_message.lower() or "refused" in error_message.lower():
+                logger.error("  💡 Suggestion: Neo4j might not be running")
+                logger.error("     For local Neo4j: Start with 'neo4j start' or check service status")
+                logger.error("     For Neo4j Aura: Verify your instance URL and credentials")
+            
             return False
     
     def close(self):

@@ -342,9 +342,12 @@ class AdjudicatorAgent(BaseAgent):
         if rule_id == "SOP-A001-01":
             # High Velocity High Risk Escalation
             # Condition: transaction_count >= 5 AND total_amount > 25000 AND kyc_risk == HIGH
+            # Also check if there's no prior high velocity (new pattern)
+            has_prior_velocity = findings.get("has_prior_high_velocity", False)
             return (findings.get("transaction_count", 0) >= 5 and 
                     findings.get("total_amount", 0) > 25000 and 
-                    context.get("kyc_risk") == "HIGH")
+                    context.get("kyc_risk") == "HIGH" and
+                    not has_prior_velocity)
         elif rule_id == "SOP-A001-02":
             # Known Business Cycle Close
             # Condition: is_business_cycle == True
@@ -356,23 +359,38 @@ class AdjudicatorAgent(BaseAgent):
             return findings.get("linked_accounts_aggregate", 0) > 28000
         elif rule_id == "SOP-A002-02":
             # Legitimate Business RFI - match if is_legitimate_business is True
-            return findings.get("is_legitimate_business") == True
+            # Also consider geographic diversity as indicator of legitimate business
+            is_legitimate = findings.get("is_legitimate_business") == True
+            is_geographically_diverse = findings.get("is_geographically_diverse", False)
+            return is_legitimate or is_geographically_diverse
         
         # KYC_INCONSISTENCY - Specific SOP matching
         elif rule_id == "SOP-A003-01":
             # Jeweler/Precious Metals Trader Close
+            # Also check OSINT - if no adverse media, close as false positive
+            has_adverse_media = findings.get("has_adverse_media", False)
             return (context.get("occupation") in ["Jeweler", "Precious Metals Trader", "Jeweler/Goldsmith"] and
-                    findings.get("is_precious_metals") == True)
+                    findings.get("is_precious_metals") == True and
+                    not has_adverse_media)
         elif rule_id == "SOP-A003-02":
             # Teacher/Student Escalation
+            # Consider OSINT results - if adverse media found, definitely escalate
+            has_adverse_media = findings.get("has_adverse_media", False)
+            osint_risk = findings.get("osint_risk_level", "LOW")
             return (context.get("occupation") in ["Teacher", "Student", "Government Employee"] and
-                    findings.get("is_precious_metals") == True)
+                    findings.get("is_precious_metals") == True and
+                    (has_adverse_media or osint_risk in ["MEDIUM", "HIGH"]))
         
         # SANCTIONS_HIT - Specific SOP matching
         elif rule_id == "SOP-A004-01":
             # High Match Score Escalation
+            # Also check high-risk jurisdiction and established relationship status
+            is_high_risk_jurisdiction = findings.get("is_high_risk_jurisdiction", False)
+            is_established = findings.get("is_established_relationship", False)
+            # Escalate if: high match score OR high-risk jurisdiction OR new relationship with high match
             return (findings.get("match_score", 0) >= 0.90 or
-                    context.get("jurisdiction") == "HIGH_RISK")
+                    is_high_risk_jurisdiction or
+                    (findings.get("match_score", 0) >= 0.80 and not is_established))
         elif rule_id == "SOP-A004-02":
             # Proven False Positive Close
             return findings.get("is_false_positive") == True

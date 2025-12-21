@@ -353,9 +353,12 @@ def _create_scenario_test_data(alert_id: str, scenario_code: str, account_id: st
         db.execute_write(query, {"customer_id": customer_id})
         
     elif scenario_code == "STRUCTURING":
-        # Create 3 deposits just under $10k each
+        # Create 3 deposits just under $10k each with geographic diversity
         transactions = []
         amounts = [9500, 9800, 9700]  # All under 10k
+        geographic_locations = ['New York, NY', 'Los Angeles, CA', 'Chicago, IL']
+        branch_locations = ['Branch-A', 'Branch-B', 'Branch-C']
+        
         for i, amount in enumerate(amounts):
             txn_time = alert_time - timedelta(days=2 - i)
             transactions.append({
@@ -364,7 +367,9 @@ def _create_scenario_test_data(alert_id: str, scenario_code: str, account_id: st
                 "transaction_type": "INBOUND",
                 "timestamp": txn_time.isoformat(),
                 "counterparty": f"Source-{i+1}",
-                "description": "Deposit"
+                "description": "Deposit",
+                "branch_location": branch_locations[i],
+                "geographic_location": geographic_locations[i]
             })
         
         for txn in transactions:
@@ -375,7 +380,9 @@ def _create_scenario_test_data(alert_id: str, scenario_code: str, account_id: st
                 t.transaction_type = $transaction_type,
                 t.timestamp = datetime($timestamp),
                 t.counterparty = $counterparty,
-                t.description = $description
+                t.description = $description,
+                t.branch_location = $branch_location,
+                t.geographic_location = $geographic_location
             MERGE (acc)-[:HAS_TRANSACTION]->(t)
             """
             # Add account_id to transaction parameters
@@ -882,6 +889,26 @@ async def _send_proof_evaluation_email(alert_id: str, evaluation: Dict, customer
 # EMAIL TEST ENDPOINT
 # ============================================================================
 
+@app.get("/test/email/diagnostics")
+async def get_email_diagnostics():
+    """
+    Get email configuration diagnostics without sending an email
+    """
+    try:
+        from services.email_service import get_email_service
+        
+        email_service = get_email_service()
+        diagnostics = email_service.get_email_config_diagnostics()
+        
+        return diagnostics
+        
+    except Exception as e:
+        logger.error(f"Failed to get email diagnostics: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @app.post("/test/email")
 async def test_email(email: Optional[str] = None):
     """
@@ -894,6 +921,9 @@ async def test_email(email: Optional[str] = None):
         import os
         
         email_service = get_email_service()
+        
+        # Get diagnostics
+        diagnostics = email_service.get_email_config_diagnostics()
         
         # Use provided email or default test email
         test_email = email or os.getenv("SMTP_USER", "test@example.com")
@@ -933,8 +963,10 @@ async def test_email(email: Optional[str] = None):
         return {
             "success": result.get("success", False),
             "config": config_status,
+            "diagnostics": diagnostics,
             "result": result,
-            "message": "Test email sent successfully" if result.get("success") else f"Test email failed: {result.get('reason', result.get('error', 'Unknown error'))}"
+            "message": "Test email sent successfully" if result.get("success") else f"Test email failed: {result.get('reason', result.get('error', 'Unknown error'))}",
+            "note": "SMTP acceptance doesn't guarantee delivery. Check spam folder if email not received."
         }
         
     except Exception as e:

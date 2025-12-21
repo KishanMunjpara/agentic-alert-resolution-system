@@ -289,6 +289,8 @@ CREATE (a2)-[:HAS_TRANSACTION {added_at: datetime()}]->(s1:Transaction {
   description: 'Deposit',
   counterparty: 'Cash Deposit',
   counterparty_mcc: 'CASH_DEPOSIT',
+  branch_location: 'Branch-A',
+  geographic_location: 'New York, NY',
   reference: 'REF-101',
   created_at: datetime()
 });
@@ -303,6 +305,8 @@ CREATE (a2)-[:HAS_TRANSACTION {added_at: datetime()}]->(s2:Transaction {
   description: 'Deposit',
   counterparty: 'Cash Deposit',
   counterparty_mcc: 'CASH_DEPOSIT',
+  branch_location: 'Branch-B',
+  geographic_location: 'Los Angeles, CA',
   reference: 'REF-102',
   created_at: datetime()
 });
@@ -317,6 +321,8 @@ CREATE (a2)-[:HAS_TRANSACTION {added_at: datetime()}]->(s3:Transaction {
   description: 'Deposit',
   counterparty: 'Cash Deposit',
   counterparty_mcc: 'CASH_DEPOSIT',
+  branch_location: 'Branch-C',
+  geographic_location: 'Chicago, IL',
   reference: 'REF-103',
   created_at: datetime()
 });

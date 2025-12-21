@@ -122,7 +122,10 @@ class ContextGathererAgent(BaseAgent):
             return None
     
     async def _get_kyc_profile(self, customer_id: str) -> Dict:
-        """Get KYC profile for customer"""
+        """
+        Get KYC profile for customer
+        Assignment Requirement: KYC Query Simulation - "Executes a simulated get_kyc_profile method, returning relevant profile data"
+        """
         query = """
         MATCH (c:Customer {customer_id: $customer_id})
         RETURN {
@@ -138,6 +141,16 @@ class ContextGathererAgent(BaseAgent):
             results = await self.query_database(query, {"customer_id": customer_id})
             if results and results[0].get("profile"):
                 profile = results[0]["profile"]
+                
+                # Assignment Requirement: KYC Query Simulation - Console Output
+                print(f"[Context Tool Simulation] get_kyc_profile(customer_id='{customer_id}')")
+                print(f"[Context Tool Result] KYC Profile Retrieved:")
+                print(f"  - KYC Risk: {profile.get('kyc_risk', 'N/A')}")
+                print(f"  - Occupation: {profile.get('occupation', 'N/A')}")
+                print(f"  - Employer: {profile.get('employer', 'N/A')}")
+                print(f"  - Declared Income: ${profile.get('declared_income', 0):,.2f}")
+                print(f"  - Profile Age (days): {profile.get('profile_age_days', 0)}")
+                
                 self.logger.info(f"KYC profile for {customer_id}: {profile}")
                 return profile
             self.logger.warning(f"No KYC profile found for customer {customer_id}")
@@ -147,10 +160,12 @@ class ContextGathererAgent(BaseAgent):
             return {}
     
     async def _get_linked_accounts(self, customer_id: str) -> list:
-        """Get accounts linked to customer"""
+        """
+        Get accounts owned by customer
+        Returns all accounts directly owned by the customer
+        """
         query = """
-        MATCH (c:Customer {customer_id: $customer_id})
-        OPTIONAL MATCH (c)-[:LINKED_TO]->(c2:Customer)-[:OWNS]->(a:Account)
+        MATCH (c:Customer {customer_id: $customer_id})-[:OWNS]->(a:Account)
         RETURN COLLECT(DISTINCT a.account_id) as linked_accounts
         """
         

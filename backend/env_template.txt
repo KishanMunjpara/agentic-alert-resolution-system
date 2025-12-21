@@ -41,15 +41,27 @@ AGENT_ENABLE_LOGGING=true
 AUTO_CREATE_SEED_DATA=true
 
 # ========== EMAIL SERVICE CONFIGURATION ==========
-SMTP_HOST=smtp.gmail.com
+# Brevo (formerly Sendinblue) SMTP Configuration
+# Get your SMTP credentials from: https://app.brevo.com/settings/keys/api
+SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-specific-password-here
-FROM_EMAIL=noreply@yourdomain.com
+# SMTP_USER: Your Brevo SMTP login (usually your account email or SMTP login)
+SMTP_USER=your-brevo-smtp-login@smtp-brevo.com
+# SMTP_PASSWORD: Your Brevo SMTP key (NOT your account password - get from Brevo dashboard)
+SMTP_PASSWORD=your-brevo-smtp-key-here
+# FROM_EMAIL: Any verified sender email in your Brevo account (doesn't need to match SMTP_USER)
+FROM_EMAIL=your-verified-sender@example.com
 FROM_NAME=Compliance Team
 MAX_EMAILS_PER_HOUR=5
 MAX_EMAILS_PER_DAY=10
 BLOCKED_EMAIL_DOMAINS=test.com,example.com
+
+# Alternative: Gmail Configuration (requires App Password)
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_USER=your-email@gmail.com
+# SMTP_PASSWORD=your-app-password-here
+# FROM_EMAIL=your-email@gmail.com  # Must match SMTP_USER for Gmail
 
 # Compliance Team Email (for SAR case notifications)
 # Default: email
